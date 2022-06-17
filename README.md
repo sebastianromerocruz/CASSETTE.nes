@@ -7,6 +7,4 @@
 [![Sprite Editor Eonarheim](https://img.shields.io/badge/Sprite%20Editor-Eonarheim-yellow)](https://eonarheim.github.io/NES-Sprite-Editor/)
 [![OS MacOS](https://img.shields.io/badge/OS-MacOS-9cf)](https://www.apple.com)
 
-Palette String:$0F,$14,$23,$32
-
 Some cute NES art for practice.

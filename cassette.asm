@@ -56,7 +56,7 @@ RESET:
     ;; Subroutines
     JSR LoadBackground
     JSR LoadAttributes
-    ; TODO - load palettes
+    JSR LoadPalettes
     ; TODO - load sprites
 
     ;; Re-enable NMI
@@ -101,6 +101,11 @@ VBlankTwo:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 7. Subroutines (load background, palettes, etc.)                                                    ;;
+;;      - IniniteLoop                                                                                  ;;
+;;      - LoadBackground                                                                               ;;
+;;      - LoadAttributes                                                                               ;;
+;;      - LoadPalettes                                                                                 ;;
+;;      - LoadSprites                                                                                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 InfiniteLoop:
     JMP InfiniteLoop
@@ -145,6 +150,44 @@ LoadBackground:
     RTS
 
 LoadAttributes:
+    LDA PPUSTATUS
+
+    ;; Tell PPU where to store attribute data (16-bit address)
+    LDA #ATTR_APORT
+    STA PPUADDR
+    LDA #ATTR_BPORT
+    STA PPUADDR
+
+    LDX #$00
+.Loop:
+    LDA attributes,X
+    STA PPUDATA
+
+    INX
+    CPX #ATTRB_SIZE
+    BNE .Loop
+
+    RTS
+
+LoadPalettes:
+    LDA PPUSTATUS
+
+    ;; Tell PPU where to store the palette data
+    LDA #PLTTE_PORT
+    STA PPUADDR
+    LDA #$00
+    STA PPUADDR
+
+    LDX #$00
+.Loop:
+    LDA palettes,X
+    STA PPUDATA
+
+    INX
+    CPX #PLTTE_SIZE
+    BNE .Loop
+
+    RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 8. NMI                                                                                              ;;
@@ -164,6 +207,9 @@ background:
 
 attributes:
     .include "assets/banks/attributes.asm"
+
+palettes:
+    .include "assets/banks/palettes.asm"
 
     ;; TODO - Include attributes, palettes, and sprites files
 
