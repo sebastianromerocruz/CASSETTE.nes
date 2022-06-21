@@ -57,7 +57,7 @@ RESET:
     JSR LoadBackground
     JSR LoadAttributes
     JSR LoadPalettes
-    ; TODO - load sprites
+    JSR LoadSprites
 
     ;; Re-enable NMI
     LDA #NMI_ENABLE
@@ -189,10 +189,29 @@ LoadPalettes:
 
     RTS
 
+LoadSprites:
+    LDX #$00
+.Loop:
+    LDA sprites,X
+    STA SPRITE_RAM,X
+
+    INX
+    CPX SPRITE_SIZE
+    BNE .Loop
+
+    RTS
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 8. NMI                                                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NMI:
+    ;; Load the low and high sprite bytes to their respective addresses
+    LDA #SPRITE_LOW
+    STA NMI_LO_ADDR
+
+    LDA #SPRITE_HI
+    STA NMI_HI_ADDR
+
     RTI
 
 
@@ -211,7 +230,8 @@ attributes:
 palettes:
     .include "assets/banks/palettes.asm"
 
-    ;; TODO - Include attributes, palettes, and sprites files
+sprites:
+    .include "assets/banks/sprites.asm"
 
     .org IRQRE
     .dw NMI
