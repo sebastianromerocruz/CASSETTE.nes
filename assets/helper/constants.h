@@ -47,12 +47,22 @@ BBLE_TL_Y_3 = $0308
 BBLE_TL_Y_4 = $030C
 BBLE_TL_Y_5 = $0310
 BBLE_TL_Y_6 = $0314
+
 BBLE_TL_X_1 = $0303
 BBLE_TL_X_2 = $0307
 BBLE_TL_X_3 = $030B
 BBLE_TL_X_4 = $030F
 BBLE_TL_X_5 = $0313
 BBLE_TL_X_6 = $0317
+
+C_TL_X  = $0333
+A_TL_X  = $0337
+S1_TL_X = $033B
+S2_TL_X = $033F
+E1_TL_X = $0343
+T1_TL_X = $0347
+T2_TL_X = $034B
+E2_TL_X = $034F
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BORDER BOUNDARIES     ;;

@@ -27,6 +27,7 @@
     .rsset VARLOC
 backgroundLowByte   .rs 1
 backgroundHighByte  .rs 1
+NO_SKIP               .rs 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 5. Reset                                                                                            ;;
@@ -52,6 +53,9 @@ RESET:
     STX PPUCTRL
     STX PPUMASK
     STX DELMODADDR
+
+    LDA #$00
+    STA NO_SKIP
 
     ;; Subroutines
     JSR LoadBackground
@@ -212,8 +216,70 @@ NMI:
     LDA #SPRITE_HI
     STA NMI_HI_ADDR
 
+    JSR RotateText
+
     RTI
 
+RotateText:
+    LDA NO_SKIP
+    CMP #$01
+    BNE .Skip
+
+    CLC
+    LDA C_TL_X
+    ADC #$01
+    STA C_TL_X
+
+    CLC
+    LDA A_TL_X
+    ADC #$01
+    STA A_TL_X
+
+    CLC
+    LDA S1_TL_X
+    ADC #$01
+    STA S1_TL_X
+
+    CLC
+    LDA S2_TL_X
+    ADC #$01
+    STA S2_TL_X
+
+    CLC
+    LDA E1_TL_X
+    ADC #$01
+    STA E1_TL_X
+
+    CLC
+    LDA T1_TL_X
+    ADC #$01
+    STA T1_TL_X
+
+    CLC
+    LDA T2_TL_X
+    ADC #$01
+    STA T2_TL_X
+
+    CLC
+    LDA E2_TL_X
+    ADC #$01
+    STA E2_TL_X
+
+    SEC
+    LDA NO_SKIP
+    SBC #$01
+    STA NO_SKIP
+
+    JMP .Move
+
+.Skip:
+    CLC
+    LDA NO_SKIP
+    ADC #$01
+    STA NO_SKIP
+
+.Move:
+    RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 9. Sprite bank files                                                                                ;;
