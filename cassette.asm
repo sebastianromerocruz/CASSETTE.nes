@@ -27,7 +27,7 @@
     .rsset VARLOC
 backgroundLowByte   .rs 1
 backgroundHighByte  .rs 1
-NO_SKIP               .rs 1
+noSkipFlag          .rs 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 5. Reset                                                                                            ;;
@@ -55,7 +55,7 @@ RESET:
     STX DELMODADDR
 
     LDA #$00
-    STA NO_SKIP
+    STA noSkipFlag
 
     ;; Subroutines
     JSR LoadBackground
@@ -221,62 +221,41 @@ NMI:
     RTI
 
 RotateText:
-    LDA NO_SKIP
+    LDA noSkipFlag
     CMP #$01
     BNE .Skip
 
-    CLC
-    LDA C_TL_X
-    ADC #$01
-    STA C_TL_X
+    LDX #$00
+    LDY #$00
 
+.StringLoop:
     CLC
-    LDA A_TL_X
+    LDA STRNG_STRT,X
     ADC #$01
-    STA A_TL_X
+    STA STRNG_STRT,X
 
-    CLC
-    LDA S1_TL_X
-    ADC #$01
-    STA S1_TL_X
+.CharacterLoop:    
+    INX
+    INY
+    CPY #CHAR_GAP
+    BNE .CharacterLoop
 
-    CLC
-    LDA S2_TL_X
-    ADC #$01
-    STA S2_TL_X
-
-    CLC
-    LDA E1_TL_X
-    ADC #$01
-    STA E1_TL_X
-
-    CLC
-    LDA T1_TL_X
-    ADC #$01
-    STA T1_TL_X
-
-    CLC
-    LDA T2_TL_X
-    ADC #$01
-    STA T2_TL_X
-
-    CLC
-    LDA E2_TL_X
-    ADC #$01
-    STA E2_TL_X
+    LDY #$00
+    CPX #STRNG_SIZE
+    BNE .StringLoop
 
     SEC
-    LDA NO_SKIP
+    LDA noSkipFlag
     SBC #$01
-    STA NO_SKIP
+    STA noSkipFlag
 
     JMP .Move
 
 .Skip:
     CLC
-    LDA NO_SKIP
+    LDA noSkipFlag
     ADC #$01
-    STA NO_SKIP
+    STA noSkipFlag
 
 .Move:
     RTS

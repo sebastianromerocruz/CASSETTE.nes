@@ -55,14 +55,9 @@ BBLE_TL_X_4 = $030F
 BBLE_TL_X_5 = $0313
 BBLE_TL_X_6 = $0317
 
-C_TL_X  = $0333
-A_TL_X  = $0337
-S1_TL_X = $033B
-S2_TL_X = $033F
-E1_TL_X = $0343
-T1_TL_X = $0347
-T2_TL_X = $034B
-E2_TL_X = $034F
+STRNG_STRT = $0333
+STRNG_SIZE = $20
+CHAR_GAP   = $04
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BORDER BOUNDARIES     ;;
