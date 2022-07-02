@@ -14,24 +14,24 @@ cassetteSprite:
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
     ;; Corners
-    .db $80, $08, %00000000, $80  ; upper left
-    .db $90, $08, %10000000, $80  ; lower left
-    .db $80, $08, %01000000, $98  ; upper right
-    .db $90, $08, %11000000, $98  ; lower right
+    .db $70, $08, %00000000, $70  ; upper left
+    .db $80, $08, %10000000, $70  ; lower left
+    .db $70, $08, %01000000, $88  ; upper right
+    .db $80, $08, %11000000, $88  ; lower right
 
     ;; Middle vertical borders
-    .db $88, $09, %00000000, $80  ; left
-    .db $88, $09, %01000000, $98  ; right
+    .db $78, $09, %00000000, $70  ; left
+    .db $78, $09, %01000000, $88  ; right
 
     ; ;; Middle horizontal borders
-    .db $80, $0A, %00000000, $88  ; upper left
-    .db $80, $0A, %01000000, $90  ; upper right
-    .db $90, $0A, %10000000, $88  ; lower left
-    .db $90, $0A, %11000000, $90  ; lower right
+    .db $70, $0A, %00000000, $78  ; upper left
+    .db $70, $0A, %01000000, $80  ; upper right
+    .db $80, $0A, %10000000, $78  ; lower left
+    .db $80, $0A, %11000000, $80  ; lower right
 
     ;; Middle sections
-    .db $88, $0B, %00000000, $88  ; left
-    .db $88, $0B, %01000000, $90  ; right
+    .db $78, $0B, %00000000, $78  ; left
+    .db $78, $0B, %01000000, $80  ; right
 
     ;; Cassette
     .db $14, $0D, %00000000, $20  ; C

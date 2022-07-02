@@ -14,7 +14,7 @@
     .inesmir 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 2. Helper and macros files                                                                          ;;
+;; 2. Helper files                                                                                     ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     .include "assets/helper/addresses.h"
@@ -28,6 +28,8 @@
 backgroundLowByte   .rs 1
 backgroundHighByte  .rs 1
 noSkipFlag          .rs 1
+cassetteBounceFlag  .rs 1
+cassetteUpFlag      .rs 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 5. Reset                                                                                            ;;
@@ -56,6 +58,8 @@ RESET:
 
     LDA #$00
     STA noSkipFlag
+    STA cassetteUpFlag
+    STA cassetteBounceFlag
 
     ;; Subroutines
     JSR LoadBackground
@@ -206,7 +210,10 @@ LoadSprites:
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 8. NMI                                                                                              ;;
+;; 8. NMI and NMI-based subroutines                                                                    ;;
+;;      - NMI                                                                                          ;;
+;;      - CassetteBounce                                                                               ;;
+;;      - RotateText                                                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NMI:
     ;; Load the low and high sprite bytes to their respective addresses
@@ -216,48 +223,124 @@ NMI:
     LDA #SPRITE_HI
     STA NMI_HI_ADDR
 
+    JSR CassetteBounce
     JSR RotateText
 
     RTI
 
-RotateText:
+CassetteBounce:
+    ;; Only bounce every other frame
     LDA noSkipFlag
-    CMP #$01
+    CMP #BINARY_ONE
     BNE .Skip
 
+    ;; Should we flip direction?
+    LDA cassetteBounceFlag
+    CMP #BNCE_ANIM_TMR
+    BEQ .FlipBounceDirection
+    BNE .Bounce
+
+.FlipBounceDirection:
+    ;; cassetteUpFlag = !cassetteUpFlag (see ./assets/helper/macros.asm)
+    NOT cassetteUpFlag
+    
+    ;; Restart the 0-5 animation timer
+    LDA #$00
+    STA cassetteBounceFlag
+
+.Bounce:
+    ;; Bounce either up or down depending on the value ofcassetteUpFlag
+    LDA cassetteUpFlag
+    CMP #$00
+    BEQ .Up
+    BNE .Down
+
+    ;; UP-BOUNCE
+.Up:
     LDX #$00
     LDY #$00
+.UpLoop:
+    SEC
+    LDA CASSETTE_STRT,X 
+    SBC #BINARY_ONE
+    STA CASSETTE_STRT,X
 
+.SpriteUpLoop:
+    INY
+    INX
+    CPY #CHAR_GAP
+    BNE .SpriteUpLoop
+    
+    LDY #$00
+    CPX #CASSETTE_SIZE
+    BNE .UpLoop
+
+    JMP .End
+
+    ;; DOWN-BOUNCE
+.Down:
+    LDX #$00
+    LDY #$00
+.DownLoop:
+    CLC
+    LDA CASSETTE_STRT,X
+    ADC #BINARY_ONE
+    STA CASSETTE_STRT,X
+
+.SpriteDownLoop:
+    INY
+    INX
+    CPY #CHAR_GAP
+    BNE .SpriteDownLoop
+    
+    LDY #$00
+    CPX #CASSETTE_SIZE
+    BNE .DownLoop
+
+    ;; END BOUNCE
+.End:
+    CLC
+    LDA cassetteBounceFlag
+    ADC #BINARY_ONE
+    STA cassetteBounceFlag
+
+.Skip:
+    RTS
+
+;; Every OTHER frame, move "CASSETTE" string to the right
+RotateText:
+    ;; Should we skip this frame?
+    LDA noSkipFlag
+    CMP #BINARY_ONE
+    BNE .Skip   ; if so, go to .Skip
+
+    ;; If not, loop through the "CASSETTE" and translate right
+    LDX #$00    ; x = 0
+    LDY #$00    ; y = 0
 .StringLoop:
+    ;; Load the location of (0th + x)th letter, and shift it right
     CLC
     LDA STRNG_STRT,X
-    ADC #$01
+    ADC #BINARY_ONE
     STA STRNG_STRT,X
 
-.CharacterLoop:    
+.CharacterLoop:
+    ;; The next letter's x-coord is CHAR_GAP bytes away
     INX
-    INY
+    INY         ; y++ and x++ while y < CHAR_GAP
     CPY #CHAR_GAP
     BNE .CharacterLoop
 
-    LDY #$00
+    LDY #$00    ; reset y to 0
+
+    ;; Once x == STRNG_SIZE, stop
     CPX #STRNG_SIZE
     BNE .StringLoop
 
-    SEC
-    LDA noSkipFlag
-    SBC #$01
-    STA noSkipFlag
-
-    JMP .Move
-
 .Skip:
-    CLC
-    LDA noSkipFlag
-    ADC #$01
-    STA noSkipFlag
+    ; noSkipFlag = !noSkipFlag (see ./assets/helper/macros.asm)
+    NOT noSkipFlag
 
-.Move:
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -277,6 +360,9 @@ palettes:
 
 sprites:
     .include "assets/banks/sprites.asm"
+
+macros:
+    .include "assets/helper/macros.asm"
 
     .org IRQRE
     .dw NMI

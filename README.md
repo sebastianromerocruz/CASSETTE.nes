@@ -8,3 +8,7 @@
 [![OS MacOS](https://img.shields.io/badge/OS-MacOS-9cf)](https://www.apple.com)
 
 Some cute NES art for practice.
+
+![cassette](assets/graphics/cassette.gif)
+
+<sub>**Figure 1**: Current progress.</sub>

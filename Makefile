@@ -1,5 +1,5 @@
 all:
-	nesasm *.asm
+	nesasm cassette.asm
 
 run:
-	open *.nes -a nestopia
+	open cassette.nes -a nestopia
