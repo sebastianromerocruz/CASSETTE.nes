@@ -1,11 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; C A S S E T T E . a s m                                                                             ;;
+;; ——————————————————————————————————————————————————————————————————————————————————————————————————— ;;
 ;; Author: Sebastián Romero Cruz                                                                       ;;
 ;; Summer 2022                                                                                         ;;
-;; Cassette                                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 1. ines directives                                                                                  ;;
+;; ines directives                                                                                     ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     .inesprg 1
@@ -14,14 +15,15 @@
     .inesmir 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 2. Helper files                                                                                     ;;
+;; Helper files and macros                                                                             ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     .include "assets/helper/addresses.h"
     .include "assets/helper/constants.h"
+    .include "assets/helper/macros.asm"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 3. Variables                                                                                        ;;
+;; Variables                                                                                           ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     .rsset VARLOC
@@ -32,7 +34,7 @@ cassetteBounceFlag  .rs 1
 cassetteUpFlag      .rs 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 5. Reset                                                                                            ;;
+;; Reset                                                                                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .bank 0
     .org CPUADR
@@ -82,33 +84,12 @@ RESET:
     STA PPUSCROLL
     STA PPUSCROLL
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 6. Vertical blanks and memory clear; we do this for every ROM                                       ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-VBlankOne:
-    BIT PPUSTATUS
-    BPL VBlankOne
-
-ClearMem:
-    LDA #ZERO
-    STA $0100,X
-    STA $0200,X
-    STA $0400,X
-    STA $0500,X
-    STA $0600,X
-    STA $0700,X
-    LDA #$FE
-    STA $0300,X
-
-    INX
-    BNE ClearMem
-
-VBlankTwo:
-    BIT PPUSTATUS
-    BPL VBlankTwo
+    ;; Vertical blanks and memory clear (see macros.asm)
+    CLEARMEM
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 7. Subroutines (load background, palettes, etc.)                                                    ;;
+;; Subroutines                                                                                         ;;
+;; ——————————————————————————————————————————————————————————————————————————————————————————————————— ;;
 ;;      - IniniteLoop                                                                                  ;;
 ;;      - LoadBackground                                                                               ;;
 ;;      - LoadAttributes                                                                               ;;
@@ -210,7 +191,8 @@ LoadSprites:
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 8. NMI and NMI-based subroutines                                                                    ;;
+;; NMI and NMI-based subroutines                                                                       ;;
+;; ——————————————————————————————————————————————————————————————————————————————————————————————————— ;;
 ;;      - NMI                                                                                          ;;
 ;;      - CassetteBounce                                                                               ;;
 ;;      - RotateText                                                                                   ;;
@@ -223,10 +205,126 @@ NMI:
     LDA #SPRITE_HI
     STA NMI_HI_ADDR
 
+    JSR ReadControllerInput
     JSR CassetteBounce
     JSR RotateText
 
     RTI
+
+ReadControllerInput:
+    ;; Activate controller
+    LDA #CTRL_1_PORT
+    STA CNTRLRONE
+    LDA #$00
+    STA CNTRLRONE
+
+    ;; Read button input: A -> B -> Select -> Start -> Up -> Down -> Left -> Right
+    LDA CNTRLRONE   ; A
+    LDA CNTRLRONE   ; B
+    LDA CNTRLRONE   ; Select
+    LDA CNTRLRONE   ; Start
+
+ReadUp:
+    LDA CNTRLRONE
+    AND #BINARY_ONE
+    BEQ EndReadUp
+
+    LDX #$00
+    LDY #$00
+.UpLoop:
+    SEC
+    LDA CASSETTE_STRT,X
+    SBC #$01
+    STA CASSETTE_STRT,X
+
+.InnerUpLoop:
+    INY
+    INX
+    CPY #CHAR_GAP
+    BNE .InnerUpLoop
+
+    LDY #$00
+    CPX #CASSETTE_SIZE
+    BNE .UpLoop
+
+EndReadUp:
+
+ReadDown:
+    LDA CNTRLRONE
+    AND #BINARY_ONE
+    BEQ EndReadDown
+
+    LDX #$00
+    LDY #$00
+.DownLoop:
+    CLC
+    LDA CASSETTE_STRT,X
+    ADC #$01
+    STA CASSETTE_STRT,X
+
+.InnerDownLoop:
+    INY
+    INX
+    CPY #CHAR_GAP
+    BNE .InnerDownLoop
+
+    LDY #$00
+    CPX #CASSETTE_SIZE
+    BNE .DownLoop
+
+EndReadDown:
+
+ReadLeft:
+    LDA CNTRLRONE
+    AND #$01
+    BEQ EndReadLeft
+
+    LDX #$00
+    LDY #$00
+.LeftLoop:
+    SEC
+    LDA CASSETTE_TILE,X
+    SBC #$01
+    STA CASSETTE_TILE,X
+
+.InnerLeftLoop: 
+    INX
+    INY
+    CPY #CHAR_GAP
+    BNE .InnerLeftLoop
+
+    LDY #$00
+    CPX #CASSETTE_SIZE
+    BNE .LeftLoop
+
+EndReadLeft
+
+ReadRight:
+    LDA CNTRLRONE
+    AND #$01
+    BEQ EndReadRight
+
+    LDX #$00
+    LDY #$00
+.RightLoop:
+    CLC
+    LDA CASSETTE_TILE,X
+    ADC #$01
+    STA CASSETTE_TILE,X
+
+.RightInnerLoop:
+    INX
+    INY
+    CPY #CHAR_GAP
+    BNE .RightInnerLoop
+
+    LDY #$00
+    CPX #CASSETTE_SIZE
+    BNE .RightLoop
+
+
+EndReadRight:
+    RTS
 
 CassetteBounce:
     ;; Only bounce every other frame
@@ -241,7 +339,7 @@ CassetteBounce:
     BNE .Bounce
 
 .FlipBounceDirection:
-    ;; cassetteUpFlag = !cassetteUpFlag (see ./assets/helper/macros.asm)
+    ;; cassetteUpFlag = !cassetteUpFlag
     NOT cassetteUpFlag
     
     ;; Restart the 0-5 animation timer
@@ -338,13 +436,13 @@ RotateText:
     BNE .StringLoop
 
 .Skip:
-    ; noSkipFlag = !noSkipFlag (see ./assets/helper/macros.asm)
+    ; noSkipFlag = !noSkipFlag (see macros.asm)
     NOT noSkipFlag
 
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 9. Sprite bank files                                                                                ;;
+;; Sprite bank files                                                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .bank 1
     .org IRQRD
@@ -361,15 +459,12 @@ palettes:
 sprites:
     .include "assets/banks/sprites.asm"
 
-macros:
-    .include "assets/helper/macros.asm"
-
     .org IRQRE
     .dw NMI
     .dw RESET
     .dw 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 10. Sprite bank data (chr file)                                                                     ;;
+;; Spritesheet                                                                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .bank 2
     .org $0000
