@@ -11,4 +11,4 @@ Some cute NES art for practice.
 
 ![cassette](assets/graphics/cassette.gif)
 
-<sub>**Figure 1**: Current progress.</sub>
+<sub>**Figure 1**: Current progress. Download the ROM [**here**](cassette.nes).</sub>
