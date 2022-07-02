@@ -249,7 +249,7 @@ CassetteBounce:
     STA cassetteBounceFlag
 
 .Bounce:
-    ;; Bounce either up or down depending on the value ofcassetteUpFlag
+    ;; Bounce either up or down depending on the value of cassetteUpFlag
     LDA cassetteUpFlag
     CMP #$00
     BEQ .Up

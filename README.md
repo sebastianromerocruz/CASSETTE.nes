@@ -1,4 +1,4 @@
-# [**Cassette**](cassette.asm)
+# 💜 [**Cassette**](cassette.asm) 💜
 
 [![Language 6504 ASM](https://img.shields.io/badge/Language-6504%20ASM-%23fff)](https://www.masswerk.at/6502/6502_instruction_set.html)
 [![IDE VS Code](https://img.shields.io/badge/Editor-VS%20Code-%230065A9)](https://code.visualstudio.com/)
