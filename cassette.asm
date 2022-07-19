@@ -32,6 +32,7 @@ backgroundHighByte  .rs 1
 noSkipFlag          .rs 1
 cassetteBounceFlag  .rs 1
 cassetteUpFlag      .rs 1
+paletteCycleCounter .rs 1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Reset                                                                                               ;;
@@ -62,6 +63,7 @@ RESET:
     STA noSkipFlag
     STA cassetteUpFlag
     STA cassetteBounceFlag
+    STA paletteCycleCounter
 
     ;; Subroutines
     JSR LoadBackground
@@ -218,8 +220,55 @@ ReadControllerInput:
     LDA #$00
     STA CNTRLRONE
 
+ReadA:
+    ;; Check if A is being pressed
+    LDA CNTRLRONE
+    AND #BINARY_ONE
+    BEQ EndReadA
+
+    ;; To avoid very fast palette changes, only do this every other frame
+    LDA noSkipFlag
+    AND #BINARY_ONE
+    BEQ EndReadA
+
+    ;; Switch over to the next palette value (0-3)
+    CLC
+    LDA paletteCycleCounter
+    ADC #$01
+    STA paletteCycleCounter
+
+    ;; If we haven't reached 4, we can go manipulate the sprite attribute bits
+    CMP #PALETTE_LIM
+    BNE .Cycle
+
+    ;; But it we have reached 4, we should reset the counter to 0
+    LDA #$00
+    STA paletteCycleCounter
+
+.Cycle:
+    LDX #$00
+    LDY #$00
+.ALoop:
+    LDA CSSETTE_ATR,X
+    ORA #%00000011          ; turn on both palette bits —> XXXXXX11
+    EOR #%00000011          ; turn off both palette bits -> XXXXXX00
+    EOR paletteCycleCounter ; turn on the current palette (00, 01, 10, or 11)
+    STA CSSETTE_ATR,X
+
+.AInnerLoop:
+    INX
+    INY
+
+    CPY #CHAR_GAP
+    BNE .AInnerLoop
+
+    LDY #$00
+    CPX #CASSETTE_SIZE
+    BNE .ALoop
+
+EndReadA:
+
     ;; Read button input: A -> B -> Select -> Start -> Up -> Down -> Left -> Right
-    LDA CNTRLRONE   ; A
     LDA CNTRLRONE   ; B
     LDA CNTRLRONE   ; Select
     LDA CNTRLRONE   ; Start
@@ -228,6 +277,9 @@ ReadUp:
     LDA CNTRLRONE
     AND #BINARY_ONE
     BEQ EndReadUp
+
+    ;; Upper boundary, so that we don't overlap with text
+    STOPNEG CASSETTE_STRT, CASSETTE_YTOP, EndReadUp
 
     LDX #$00
     LDY #$00
@@ -254,6 +306,8 @@ ReadDown:
     AND #BINARY_ONE
     BEQ EndReadDown
 
+    STOPPOS CASSETTE_STRT, BORDER_DOWN, EndReadDown
+
     LDX #$00
     LDY #$00
 .DownLoop:
@@ -279,6 +333,8 @@ ReadLeft:
     AND #$01
     BEQ EndReadLeft
 
+    STOPNEG CASSETTE_TILE, BRDR_UP_LFT, EndReadLeft
+
     LDX #$00
     LDY #$00
 .LeftLoop:
@@ -303,6 +359,8 @@ ReadRight:
     LDA CNTRLRONE
     AND #$01
     BEQ EndReadRight
+
+    STOPPOS CASSETTE_TILE, BORDER_RGHT, EndReadRight
 
     LDX #$00
     LDY #$00
@@ -355,6 +413,10 @@ CassetteBounce:
 
     ;; UP-BOUNCE
 .Up:
+
+    ;; Upper boundary, so that we don't overlap with text
+    STOPNEG CASSETTE_STRT, CASSETTE_YTOP, .End
+
     LDX #$00
     LDY #$00
 .UpLoop:
@@ -377,6 +439,8 @@ CassetteBounce:
 
     ;; DOWN-BOUNCE
 .Down:
+    STOPPOS CASSETTE_STRT, BORDER_DOWN, .End
+
     LDX #$00
     LDY #$00
 .DownLoop:

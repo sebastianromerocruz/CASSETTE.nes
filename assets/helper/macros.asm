@@ -58,3 +58,47 @@ NOT     .MACRO
          AND #$01
          STA \1
         .ENDM
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Title:           Stop If Negative Directional Limit Is Reached ;;
+;; Name:            STOPNEG                                       ;;
+;; —————————————————————————————————————————————————————————————— ;;
+;; Purpose:         Loads address \1 and, if subtracting one to   ;;
+;;                  it results in a collision (i.e. == \2), jump  ;;
+;;                  to \3.                                        ;;
+;;                                                                ;;
+;; Parameters:      \1: The address of a value                    ;;
+;;                  \2: Limit literal value                       ;;
+;;                  \3: Jump destination if limit is met          ;;
+;; Time:            TBD                                           ;;
+;; Size:            TBD                                           ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+STOPNEG .MACRO
+         LDA \1
+         SEC
+         SBC #$01
+         CMP #\2
+         BEQ \3
+        .ENDM
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Title:           Stop If Positive Directional Limit Is Reached ;;
+;; Name:            STOPNEG                                       ;;
+;; —————————————————————————————————————————————————————————————— ;;
+;; Purpose:         Loads address \1 and, if adding one to it     ;;
+;;                  results in a collision (i.e. == \2), jump to  ;;
+;;                  \3.                                        ;;
+;;                                                                ;;
+;; Parameters:      \1: The address of a value                    ;;
+;;                  \2: Limit literal value                       ;;
+;;                  \3: Jump destination if limit is met          ;;
+;; Time:            TBD                                           ;;
+;; Size:            TBD                                           ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+STOPPOS .MACRO
+         LDA \1
+         CLC
+         ADC #$01
+         CMP #\2
+         BEQ \3
+        .ENDM

@@ -45,6 +45,7 @@ BINARY_ONE  = %00000001
 CASSETTE_STRT = $0300
 CASSETTE_TILE = $0303
 CASSETTE_SIZE = $30
+CASSETTE_YTOP = $20
 BNCE_ANIM_TMR = $06
 
 STRNG_STRT = $0333
@@ -55,5 +56,11 @@ CHAR_GAP   = $04
 ;; BORDER BOUNDARIES     ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 BRDR_UP_LFT = $01
-BORDER_DOWN = $E7
+BORDER_DOWN = $DB
 BORDER_RGHT = $FA
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; PALETTES              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+PALETTE_LIM = $04
+CSSETTE_ATR = $0302
