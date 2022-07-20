@@ -41,6 +41,37 @@ CLEARMEM   .MACRO
            .ENDM
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Title:           Clear Sound Registers                         ;;
+;; Name:            CLEARMEM                                      ;;
+;; —————————————————————————————————————————————————————————————— ;;
+;; Purpose:         Performs routine sound register clearing at   ;;
+;;                  the beginning of every ROM run.               ;;
+;;                                                                ;;
+;; Parameters:      None                                          ;;
+;; Time:            Varies                                        ;;
+;; Size:            TBD                                           ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+CLEARSOUND .MACRO
+                LDA #$00            ; Initialize sound registers
+                LDX #$00
+            ClearSoundLoop:
+                STA $4000,X
+                INX
+                CPX #$0F
+                BNE ClearSoundLoop
+                LDA #$10
+                STA $4010 
+                LDA #$00
+                STA $4011                                                       ;;
+                STA $4012                                                       ;;
+                STA $4013  
+                LDA #%00011111
+                STA $4015 
+                LDA #$00
+                LDX #$00
+           .ENDM
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Title:           Boolean NOT (!)                               ;;
 ;; Name:            NOT                                           ;;
 ;; —————————————————————————————————————————————————————————————— ;;

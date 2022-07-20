@@ -16,10 +16,10 @@
 ;; ines directives                                                                                     ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    .inesprg 1
+    .inesprg 2
     .ineschr 1
     .inesmap 0
-    .inesmir 1
+    .inesmir 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helper files and macros                                                                             ;;
@@ -34,6 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     .rsset VARLOC
+music               .rs 16
 backgroundLowByte   .rs 1
 backgroundHighByte  .rs 1
 noSkipFlag          .rs 1
@@ -44,8 +45,9 @@ paletteCycleCounter .rs 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Reset                                                                                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
     .bank 0
-    .org CPUADR
+    .org $8000
 
 RESET:
     ;; Housecleaning
@@ -70,13 +72,24 @@ RESET:
     STA noSkipFlag
     STA cassetteUpFlag
     STA cassetteBounceFlag
-    STA paletteCycleCounter
+    STA paletteCycleCounter  
+    
+    ;; Vertical blanks and memory clear (see macros.asm)
+    CLEARMEM    
+    ;; Initialize sound registers (see macros.asm)
+    CLEARSOUND    
+    JSR INITADDR
+
+    ;; Disable NMI, PPU Mask, and DMC IRQ
+    LDA #$00
+    STA PPUCTRL
+    STA PPUMASK
 
     ;; Subroutines
     JSR LoadBackground
     JSR LoadAttributes
     JSR LoadPalettes
-    JSR LoadSprites
+    JSR LoadSprites  
 
     ;; Re-enable NMI
     LDA #NMI_ENABLE
@@ -93,111 +106,16 @@ RESET:
     STA PPUSCROLL
     STA PPUSCROLL
 
-    ;; Vertical blanks and memory clear (see macros.asm)
-    CLEARMEM
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Subroutines                                                                                         ;;
-;; ——————————————————————————————————————————————————————————————————————————————————————————————————— ;;
-;;      - IniniteLoop                                                                                  ;;
-;;      - LoadBackground                                                                               ;;
-;;      - LoadAttributes                                                                               ;;
-;;      - LoadPalettes                                                                                 ;;
-;;      - LoadSprites                                                                                  ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 InfiniteLoop:
     JMP InfiniteLoop
 
-LoadBackground:
-    ;;;; TODO - load background
-    ;; Reset PPU
-    LDA PPUSTATUS
+    .bank 1
+    .org LOADADDR
+    .incbin "assets/audio/Untitled.nsf"
 
-    ;; Tell the PPU where to load data (do it twice for necessary 2 bytes)
-    LDA #BG_PORT
-    STA PPUADDR
-    LDA #ZERO
-    STA PPUADDR
-
-    ;; Load the low and high bytes of the background into our variables
-    LDA #LOW(background)
-    STA backgroundLowByte
-    LDA #HIGH(background)
-    STA backgroundHighByte
-
-    ;; Loop through the background memory banks
-    LDX #ZERO
-    LDY #ZERO
-.Loop:
-    ;; Store that current byte into the PPU
-    LDA [backgroundLowByte],Y
-    STA PPUDATA
-
-    ;; Keep y++ until overflow
-    INY
-    CPY #ZERO
-    BNE .Loop
-
-    ;; Keep x++ until .Loop iterates four times to cover the necessary bytes (1024)
-    INC backgroundHighByte
-    INX
-    CPX #$04
-    BNE .Loop
-
-    ;; Returns
-    RTS
-
-LoadAttributes:
-    LDA PPUSTATUS
-
-    ;; Tell PPU where to store attribute data (16-bit address)
-    LDA #ATTR_APORT
-    STA PPUADDR
-    LDA #ATTR_BPORT
-    STA PPUADDR
-
-    LDX #$00
-.Loop:
-    LDA attributes,X
-    STA PPUDATA
-
-    INX
-    CPX #ATTRB_SIZE
-    BNE .Loop
-
-    RTS
-
-LoadPalettes:
-    LDA PPUSTATUS
-
-    ;; Tell PPU where to store the palette data
-    LDA #PLTTE_PORT
-    STA PPUADDR
-    LDA #$00
-    STA PPUADDR
-
-    LDX #$00
-.Loop:
-    LDA palettes,X
-    STA PPUDATA
-
-    INX
-    CPX #PLTTE_SIZE
-    BNE .Loop
-
-    RTS
-
-LoadSprites:
-    LDX #$00
-.Loop:
-    LDA sprites,X
-    STA SPRITE_RAM,X
-
-    INX
-    CPX SPRITE_SIZE
-    BNE .Loop
-
-    RTS
+    .bank 2
+    .org CPUADR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; NMI and NMI-based subroutines                                                                       ;;
@@ -207,6 +125,11 @@ LoadSprites:
 ;;      - RotateText                                                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NMI:
+    PHA                 ; Back up
+    TXA
+    PHA
+    TYA
+    PHA           
     ;; Load the low and high sprite bytes to their respective addresses
     LDA #SPRITE_LOW
     STA NMI_LO_ADDR
@@ -217,6 +140,13 @@ NMI:
     JSR ReadControllerInput
     JSR CassetteBounce
     JSR RotateText
+
+    JSR PLAYADDR
+    PLA                 ; Restore registers                         ;;
+    TAY
+    PLA
+    TAX
+    PLA
 
     RTI
 
@@ -509,34 +439,132 @@ RotateText:
 .Skip:
     ; noSkipFlag = !noSkipFlag (see macros.asm)
     NOT noSkipFlag
+    RTS
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Subroutines                                                                                         ;;
+;; ——————————————————————————————————————————————————————————————————————————————————————————————————— ;;
+;;      - IniniteLoop                                                                                  ;;
+;;      - LoadBackground                                                                               ;;
+;;      - LoadAttributes                                                                               ;;
+;;      - LoadPalettes                                                                                 ;;
+;;      - LoadSprites                                                                                  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+LoadBackground:
+    ;; Reset PPU
+    LDA PPUSTATUS
+
+    ;; Tell the PPU where to load data (do it twice for necessary 2 bytes)
+    LDA #BG_PORT
+    STA PPUADDR
+    LDA #ZERO
+    STA PPUADDR
+
+    ;; Load the low and high bytes of the background into our variables
+    LDA #LOW(background)
+    STA backgroundLowByte
+    LDA #HIGH(background)
+    STA backgroundHighByte
+
+    ;; Loop through the background memory banks
+    LDX #ZERO
+    LDY #ZERO
+.Loop:
+    ;; Store that current byte into the PPU
+    LDA [backgroundLowByte],Y
+    STA PPUDATA
+
+    ;; Keep y++ until overflow
+    INY
+    CPY #$00
+    BNE .Loop
+
+    ;; Keep x++ until .Loop iterates four times to cover the necessary bytes (1024)
+    INC backgroundHighByte
+    INX
+    CPX #$04
+    BNE .Loop
+
+    ;; Returns
+    RTS
+
+LoadAttributes:
+    LDA PPUSTATUS
+
+    ;; Tell PPU where to store attribute data (16-bit address)
+    LDA #ATTR_APORT
+    STA PPUADDR
+    LDA #ATTR_BPORT
+    STA PPUADDR
+
+    LDX #$00
+.Loop:
+    LDA attributes,X
+    STA PPUDATA
+
+    INX
+    CPX #ATTRB_SIZE
+    BNE .Loop
 
     RTS
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Sprite bank files                                                                                   ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    .bank 1
-    .org IRQRD
+LoadPalettes:
+    LDA PPUSTATUS
+
+    ;; Tell PPU where to store the palette data
+    LDA #PLTTE_PORT
+    STA PPUADDR
+    LDA #$00
+    STA PPUADDR
+
+    LDX #$00
+.Loop:
+    LDA palettes,X
+    STA PPUDATA
+
+    INX
+    CPX #PLTTE_SIZE
+    BNE .Loop
+
+    RTS
+
+LoadSprites:
+    LDX #$00
+.Loop:
+    LDA sprites,X
+    STA SPRITE_RAM,X
+
+    INX
+    CPX SPRITE_SIZE
+    BNE .Loop
+
+    RTS
 
 background:
     .include "assets/banks/background.asm"
 
-attributes:
-    .include "assets/banks/attributes.asm"
-
 palettes:
     .include "assets/banks/palettes.asm"
+
+attributes:
+    .include "assets/banks/attributes.asm"
 
 sprites:
     .include "assets/banks/sprites.asm"
 
-    .org IRQRE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sprite bank files                                                                                   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .bank 3
+    .org $E000
+    .org $FFFA
     .dw NMI
     .dw RESET
     .dw 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Spritesheet                                                                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    .bank 2
+    .bank 4
     .org $0000
     .incbin "assets/graphics/graphics.chr"

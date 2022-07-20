@@ -13,7 +13,7 @@ ZERO        = $00
 APU_RESET   = $40
 STACK_INIT  = $FF
 NMI_ENABLE  = %10000000
-SPRT_ENBLE  = %00011110
+SPRT_ENBLE  = %00011010
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; SUBROUTINES           ;;
@@ -64,3 +64,10 @@ BORDER_RGHT = $FA
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 PALETTE_LIM = $04
 CSSETTE_ATR = $0302
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; MUSIC                ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+INITADDR = $A999        ; Init address for music
+LOADADDR = $A6E0        ; Load address for music
+PLAYADDR = $A99C        ; Play address for music

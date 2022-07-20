@@ -12,3 +12,8 @@ Some cute NES art for practice.
 ![cassette](assets/graphics/cassette.gif)
 
 <sub>**Figure 1**: Current progress. Download the ROM [**here**](cassette.nes).</sub>
+
+### Usage
+
+- **🕹️**: Move Up, Down, Left, and Right
+- **🅰️**: Change Cassette Palette
