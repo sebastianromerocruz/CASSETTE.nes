@@ -76,8 +76,10 @@ RESET:
     
     ;; Vertical blanks and memory clear (see macros.asm)
     CLEARMEM    
-    ;; Initialize sound registers (see macros.asm)
-    CLEARSOUND    
+    ;; Initialise sound registers (see macros.asm)
+    CLEARSOUND  
+
+    ;; Initialise music
     JSR INITADDR
 
     ;; Disable NMI, PPU Mask, and DMC IRQ
@@ -106,16 +108,18 @@ RESET:
     STA PPUSCROLL
     STA PPUSCROLL
 
-
+    ;; Game loop
 InfiniteLoop:
     JMP InfiniteLoop
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Music data                                                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     .bank 1
     .org LOADADDR
-    .incbin "assets/audio/Untitled.nsf"
+    .incbin "assets/audio/music.nsf"
 
-    .bank 2
-    .org CPUADR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; NMI and NMI-based subroutines                                                                       ;;
@@ -123,13 +127,18 @@ InfiniteLoop:
 ;;      - NMI                                                                                          ;;
 ;;      - CassetteBounce                                                                               ;;
 ;;      - RotateText                                                                                   ;;
+;;      - PLAYADDR                                                                                     ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    .bank 2
+    .org CPUADR
 NMI:
-    PHA                 ; Back up
+    ;; Back up registers
+    PHA
     TXA
     PHA
     TYA
     PHA           
+
     ;; Load the low and high sprite bytes to their respective addresses
     LDA #SPRITE_LOW
     STA NMI_LO_ADDR
@@ -137,12 +146,16 @@ NMI:
     LDA #SPRITE_HI
     STA NMI_HI_ADDR
 
+    ;; Run NMI subroutines
     JSR ReadControllerInput
     JSR CassetteBounce
     JSR RotateText
 
+    ;; Upate music
     JSR PLAYADDR
-    PLA                 ; Restore registers                         ;;
+
+    ;; Restore registers
+    PLA
     TAY
     PLA
     TAX
